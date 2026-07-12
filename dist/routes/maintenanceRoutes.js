@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const zod_1 = require("zod");
+const maintenanceController_1 = require("../controllers/maintenanceController");
+const auth_1 = require("../middleware/auth");
+const validation_1 = require("../middleware/validation");
+const schemas_1 = require("@transport-ops/shared/schemas");
+const commonSchemas_1 = require("./commonSchemas");
+const router = (0, express_1.Router)();
+router.get('/', auth_1.requireAuth, (0, validation_1.validateQuery)(schemas_1.maintenanceFiltersSchema), maintenanceController_1.listMaintenance);
+router.get('/vehicle/:vehicleId/history', auth_1.requireAuth, (0, validation_1.validateParams)(zod_1.z.object({ vehicleId: commonSchemas_1.idParamSchema.shape.id })), maintenanceController_1.getVehicleMaintenanceHistory);
+router.get('/:id', auth_1.requireAuth, (0, validation_1.validateParams)(commonSchemas_1.idParamSchema), maintenanceController_1.getMaintenance);
+router.post('/', auth_1.requireAuth, (0, auth_1.requireRole)('ADMIN', 'MANAGER'), (0, validation_1.validateBody)(schemas_1.createMaintenanceSchema), maintenanceController_1.createMaintenance);
+router.post('/:id/close', auth_1.requireAuth, (0, auth_1.requireRole)('ADMIN', 'MANAGER'), (0, validation_1.validateParams)(commonSchemas_1.idParamSchema), (0, validation_1.validateBody)(schemas_1.closeMaintenanceSchema), maintenanceController_1.closeMaintenance);
+exports.default = router;

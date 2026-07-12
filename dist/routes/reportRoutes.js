@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const reportController_1 = require("../controllers/reportController");
+const auth_1 = require("../middleware/auth");
+const validation_1 = require("../middleware/validation");
+const schemas_1 = require("@transport-ops/shared/schemas");
+const router = (0, express_1.Router)();
+router.get('/fuel-efficiency', auth_1.requireAuth, (0, validation_1.validateQuery)(schemas_1.reportFiltersSchema), reportController_1.getFuelEfficiency);
+router.get('/fleet-utilization', auth_1.requireAuth, (0, validation_1.validateQuery)(schemas_1.reportFiltersSchema), reportController_1.getFleetUtilization);
+router.get('/operational-cost', auth_1.requireAuth, (0, validation_1.validateQuery)(schemas_1.reportFiltersSchema), reportController_1.getOperationalCost);
+router.get('/vehicle-roi', auth_1.requireAuth, (0, validation_1.validateQuery)(schemas_1.reportFiltersSchema), reportController_1.getVehicleROI);
+router.get('/export', auth_1.requireAuth, (0, validation_1.validateQuery)(schemas_1.exportParamsSchema), reportController_1.exportReport);
+exports.default = router;

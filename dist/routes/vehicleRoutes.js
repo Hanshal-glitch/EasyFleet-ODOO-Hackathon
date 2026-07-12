@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const vehicleController_1 = require("../controllers/vehicleController");
+const auth_1 = require("../middleware/auth");
+const validation_1 = require("../middleware/validation");
+const schemas_1 = require("@transport-ops/shared/schemas");
+const commonSchemas_1 = require("./commonSchemas");
+const router = (0, express_1.Router)();
+router.get('/', auth_1.requireAuth, (0, validation_1.validateQuery)(schemas_1.vehicleFiltersSchema), vehicleController_1.listVehicles);
+router.get('/available-for-dispatch', auth_1.requireAuth, (0, validation_1.validateQuery)(schemas_1.availableVehiclesSchema), vehicleController_1.getAvailableForDispatch);
+router.get('/:id', auth_1.requireAuth, (0, validation_1.validateParams)(commonSchemas_1.idParamSchema), vehicleController_1.getVehicle);
+router.post('/', auth_1.requireAuth, (0, auth_1.requireRole)('ADMIN', 'MANAGER'), (0, validation_1.validateBody)(schemas_1.createVehicleSchema), vehicleController_1.createVehicle);
+router.patch('/:id', auth_1.requireAuth, (0, auth_1.requireRole)('ADMIN', 'MANAGER'), (0, validation_1.validateParams)(commonSchemas_1.idParamSchema), (0, validation_1.validateBody)(schemas_1.updateVehicleSchema), vehicleController_1.updateVehicle);
+router.delete('/:id', auth_1.requireAuth, (0, auth_1.requireRole)('ADMIN', 'MANAGER'), (0, validation_1.validateParams)(commonSchemas_1.idParamSchema), vehicleController_1.deleteVehicle);
+exports.default = router;

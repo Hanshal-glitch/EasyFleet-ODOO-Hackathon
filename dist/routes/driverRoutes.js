@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const driverController_1 = require("../controllers/driverController");
+const auth_1 = require("../middleware/auth");
+const validation_1 = require("../middleware/validation");
+const schemas_1 = require("@transport-ops/shared/schemas");
+const commonSchemas_1 = require("./commonSchemas");
+const router = (0, express_1.Router)();
+router.get('/', auth_1.requireAuth, (0, validation_1.validateQuery)(schemas_1.driverFiltersSchema), driverController_1.listDrivers);
+router.get('/available-for-dispatch', auth_1.requireAuth, driverController_1.getAvailableForDispatch);
+router.get('/expiring-licenses', auth_1.requireAuth, (0, auth_1.requireRole)('ADMIN', 'MANAGER'), driverController_1.getExpiringLicenses);
+router.get('/:id', auth_1.requireAuth, (0, validation_1.validateParams)(commonSchemas_1.idParamSchema), driverController_1.getDriver);
+router.post('/', auth_1.requireAuth, (0, auth_1.requireRole)('ADMIN', 'MANAGER'), (0, validation_1.validateBody)(schemas_1.createDriverSchema), driverController_1.createDriver);
+router.patch('/:id', auth_1.requireAuth, (0, auth_1.requireRole)('ADMIN', 'MANAGER'), (0, validation_1.validateParams)(commonSchemas_1.idParamSchema), (0, validation_1.validateBody)(schemas_1.updateDriverSchema), driverController_1.updateDriver);
+router.delete('/:id', auth_1.requireAuth, (0, auth_1.requireRole)('ADMIN', 'MANAGER'), (0, validation_1.validateParams)(commonSchemas_1.idParamSchema), driverController_1.deleteDriver);
+exports.default = router;

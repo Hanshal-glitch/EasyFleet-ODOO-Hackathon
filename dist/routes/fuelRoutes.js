@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const fuelController_1 = require("../controllers/fuelController");
+const auth_1 = require("../middleware/auth");
+const validation_1 = require("../middleware/validation");
+const schemas_1 = require("@transport-ops/shared/schemas");
+const commonSchemas_1 = require("./commonSchemas");
+const router = (0, express_1.Router)();
+router.get('/', auth_1.requireAuth, (0, validation_1.validateQuery)(schemas_1.fuelFiltersSchema), fuelController_1.listFuelLogs);
+router.get('/:id', auth_1.requireAuth, (0, validation_1.validateParams)(commonSchemas_1.idParamSchema), fuelController_1.getFuelLog);
+router.post('/', auth_1.requireAuth, (0, auth_1.requireRole)('ADMIN', 'MANAGER'), (0, validation_1.validateBody)(schemas_1.createFuelLogSchema), fuelController_1.createFuelLog);
+exports.default = router;
