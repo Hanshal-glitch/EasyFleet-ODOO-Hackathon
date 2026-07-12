@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: transport-ops-db
+    restart: always
+    environment:
+      POSTGRES_DB: transport_ops
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d transport_ops"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    container_name: transport-ops-backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://dev:dev@postgres:5432/transport_ops?schema=public
+      SESSION_SECRET: ${SESSION_SECRET:-super-secret-key-for-prod}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173} # Change to your domain in production
+      NODE_ENV: production
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+    container_name: transport-ops-frontend
+    restart: always
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api}
+      VITE_SOCKET_URL: ${VITE_SOCKET_URL:-http://localhost:3001}
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  pg_data:

@@ -1,0 +1,11 @@
+export { DashboardPage } from './dashboard/DashboardPage';
+export { default as VehiclesPage } from './vehicles/VehiclesPage';
+export { default as DriversPage } from './drivers/DriversPage';
+export { default as TripsPage } from './trips/TripsPage';
+export { default as MaintenancePage } from './maintenance/MaintenancePage';
+export { default as FuelPage } from './fuel/FuelPage';
+export { default as ExpensesPage } from './expenses/ExpensesPage';
+export { default as ReportsPage } from './reports/ReportsPage';
+export { default as DocumentsPage } from './documents/DocumentsPage';
+export { default as SettingsPage } from './settings/SettingsPage';
+export { default as LoginPage } from './auth/LoginPage';

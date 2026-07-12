@@ -1,0 +1,300 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  DRIVER
+  VIEWER
+}
+
+enum VehicleType {
+  VAN
+  TRUCK
+  TRAILER
+  PICKUP
+  OTHER
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  ON_TRIP
+  IN_SHOP
+  RETIRED
+}
+
+enum DriverStatus {
+  AVAILABLE
+  ON_TRIP
+  OFF_DUTY
+  SUSPENDED
+}
+
+enum TripStatus {
+  DRAFT
+  DISPATCHED
+  COMPLETED
+  CANCELLED
+}
+
+enum LicenseCategory {
+  A
+  B
+  C
+  D
+  E
+  BE
+  CE
+  DE
+}
+
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ExpenseType {
+  FUEL
+  MAINTENANCE
+  TOLL
+  PARKING
+  INSURANCE
+  PERMIT
+  OTHER
+}
+
+enum DocumentType {
+  DRIVING_LICENCE
+  AADHAR
+  PAN_CARD
+  INSURANCE
+  OTHER
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  role          Role      @default(VIEWER)
+  isActive      Boolean   @default(true)
+  hasCompletedOnboardingTour Boolean @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  driver        Driver?
+  createdTrips  Trip[]    @relation("CreatedTrips")
+  updatedTrips  Trip[]    @relation("UpdatedTrips")
+  createdVehicles Vehicle[] @relation("CreatedVehicles")
+  updatedVehicles Vehicle[] @relation("UpdatedVehicles")
+  createdDrivers Driver[] @relation("CreatedDrivers")
+  updatedDrivers Driver[] @relation("UpdatedDrivers")
+  maintenanceLogs MaintenanceLog[] @relation("CreatedMaintenanceLogs")
+  updatedMaintenanceLogs MaintenanceLog[] @relation("UpdatedMaintenanceLogs")
+  fuelLogs      FuelLog[] @relation("CreatedFuelLogs")
+  expenses      Expense[] @relation("CreatedExpenses")
+  documents     Document[] @relation("UploadedDocuments")
+}
+
+model RegistrationOtp {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  firstName   String
+  lastName    String
+  passwordHash String
+  otpHash     String
+  expiresAt   DateTime
+  attempts    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires   DateTime
+  data      String?
+  createdAt DateTime @default(now())
+  @@index([userId])
+  @@index([expires])
+}
+
+model Vehicle {
+  id                  String            @id @default(cuid())
+  registrationNumber  String            @unique
+  name                String
+  model               String?
+  type                VehicleType
+  maxLoadCapacityKg   Float
+  odometerKm          Float             @default(0)
+  acquisitionCost     Float
+  status              VehicleStatus     @default(AVAILABLE)
+  region              String?
+  createdById         String
+  createdBy           User              @relation("CreatedVehicles", fields: [createdById], references: [id])
+  updatedById         String?
+  updatedBy           User?             @relation("UpdatedVehicles", fields: [updatedById], references: [id])
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  trips               Trip[]
+  maintenanceLogs     MaintenanceLog[]
+  fuelLogs            FuelLog[]
+  expenses            Expense[]
+  documents           Document[]
+  @@index([status])
+  @@index([region])
+}
+
+model Driver {
+  id                  String          @id @default(cuid())
+  userId              String?         @unique
+  user                User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name                String
+  licenseNumber       String          @unique
+  licenseCategory     LicenseCategory
+  licenseExpiryDate   DateTime
+  contactNumber       String
+  safetyScore         Float           @default(100)
+  status              DriverStatus    @default(AVAILABLE)
+  createdById         String
+  createdBy           User            @relation("CreatedDrivers", fields: [createdById], references: [id])
+  updatedById         String?
+  updatedBy           User?           @relation("UpdatedDrivers", fields: [updatedById], references: [id])
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  trips               Trip[]
+  documents           Document[]
+  @@index([licenseExpiryDate])
+  @@index([status])
+}
+
+model Trip {
+  id                    String       @id @default(cuid())
+  source                String
+  destination           String
+  vehicleId             String
+  vehicle               Vehicle      @relation(fields: [vehicleId], references: [id])
+  driverId              String
+  driver                Driver       @relation(fields: [driverId], references: [id])
+  cargoWeightKg         Float
+  plannedDistanceKm     Float
+  actualDistanceKm      Float?
+  fuelConsumedLiters    Float?
+  startOdometerKm       Float?
+  endOdometerKm         Float?
+  status                TripStatus   @default(DRAFT)
+  revenue               Float?
+  dispatchedAt          DateTime?
+  completedAt           DateTime?
+  cancelledAt           DateTime?
+  cancellationReason    String?
+  createdById           String
+  createdBy             User         @relation("CreatedTrips", fields: [createdById], references: [id])
+  updatedById           String?
+  updatedBy             User?        @relation("UpdatedTrips", fields: [updatedById], references: [id])
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  @@index([vehicleId, status])
+  @@index([driverId, status])
+  @@index([status])
+}
+
+model MaintenanceLog {
+  id                String              @id @default(cuid())
+  vehicleId         String
+  vehicle           Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  description       String
+  status            MaintenanceStatus   @default(OPEN)
+  cost              Float               @default(0)
+  startedAt         DateTime            @default(now())
+  completedAt       DateTime?
+  odometerAtStart   Float
+  odometerAtEnd     Float?
+  createdById       String
+  createdBy         User                @relation("CreatedMaintenanceLogs", fields: [createdById], references: [id])
+  updatedById       String?
+  updatedBy         User?               @relation("UpdatedMaintenanceLogs", fields: [updatedById], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  @@index([vehicleId, status])
+}
+
+model FuelLog {
+  id              String   @id @default(cuid())
+  vehicleId       String
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  liters          Float
+  costPerLiter    Float
+  totalCost       Float
+  date            DateTime @default(now())
+  odometerKm      Float
+  stationName     String?
+  receiptNumber   String?
+  createdById     String
+  createdBy       User     @relation("CreatedFuelLogs", fields: [createdById], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([vehicleId, date])
+}
+
+model Expense {
+  id          String       @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  type        ExpenseType
+  description String
+  amount      Float
+  date        DateTime     @default(now())
+  receiptUrl  String?
+  createdById String
+  createdBy   User         @relation("CreatedExpenses", fields: [createdById], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  @@index([vehicleId, date])
+  @@index([type])
+}
+
+model Document {
+  id          String        @id @default(cuid())
+  vehicleId   String?
+  vehicle     Vehicle?      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driverId    String?
+  driver      Driver?       @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  type        DocumentType
+  title       String
+  fileUrl     String
+  fileName    String
+  fileSize    Int
+  mimeType    String
+  expiryDate  DateTime?
+  uploadedById String
+  uploadedBy  User          @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  @@index([vehicleId])
+  @@index([driverId])
+  @@index([expiryDate])
+}
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  resource  String
+  resourceId String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([resource, resourceId])
+}

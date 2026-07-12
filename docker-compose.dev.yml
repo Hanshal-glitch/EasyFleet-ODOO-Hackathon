@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: transport-ops-db
+    environment:
+      POSTGRES_DB: transport_ops
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d transport_ops"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+      target: builder # Need builder target to run npm run dev
+    container_name: transport-ops-backend
+    environment:
+      DATABASE_URL: postgresql://dev:dev@postgres:5432/transport_ops?schema=public
+      SESSION_SECRET: ${SESSION_SECRET:-super-secret-key-for-dev}
+      FRONTEND_URL: http://localhost:5173
+      NODE_ENV: development
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./packages/backend:/app/packages/backend
+      - ./packages/shared:/app/packages/shared
+    command: npm run dev
+
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+      target: builder # Need builder target to run npm run dev
+    container_name: transport-ops-frontend
+    environment:
+      VITE_API_URL: http://localhost:3001/api
+      VITE_SOCKET_URL: http://localhost:3001
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./packages/frontend:/app/packages/frontend
+      - ./packages/shared:/app/packages/shared
+    command: npm run dev
+
+volumes:
+  pg_data:
